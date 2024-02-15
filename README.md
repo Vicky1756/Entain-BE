@@ -107,6 +107,23 @@ curl -X "POST" "http://localhost:8000/v1/list-races" \
    ```
 3. Our races require a new `status` field that is derived based on their `advertised_start_time`'s. The status is simply, `OPEN` or `CLOSED`. All races that have an `advertised_start_time` in the past should reflect `CLOSED`.
    > There's a number of ways this could be implemented. Just have a go!
+
+- Example Output: Races with advertised start times in the past are marked as "CLOSED".
+
+  ```bash
+    "races": [
+        {
+            "id": "94",
+            "meetingId": "3",
+            "name": "Nevada zombies",
+            "number": "9",
+            "visible": true,
+            "advertisedStartTime": "2021-02-28T08:17:26Z",
+            "status": "CLOSED"
+        }
+    ]
+  ```
+
 4. Introduce a new RPC, that allows us to fetch a single race by its ID.
    > This link here might help you on your way: https://cloud.google.com/apis/design/standard_methods#get
 5. Create a `sports` service that for sake of simplicity, implements a similar API to racing. This sports API can be called `ListEvents`. We'll leave it up to you to determine what you might think a sports event is made up off, but it should at minimum have an `id`, a `name` and an `advertised_start_time`.

@@ -109,8 +109,8 @@ func (m *racesRepo) scanRaces(
 	for rows.Next() {
 		var race racing.Race
 		var advertisedStart time.Time
-
-		if err := rows.Scan(&race.Id, &race.MeetingId, &race.Name, &race.Number, &race.Visible, &advertisedStart); err != nil {
+		// Scan the values from the database into the Race struct.
+		if err := rows.Scan(&race.Id, &race.MeetingId, &race.Name, &race.Number, &race.Visible, &advertisedStart, &race.Status); err != nil {
 			if err == sql.ErrNoRows {
 				return nil, nil
 			}
