@@ -66,6 +66,7 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	var (
 		clauses []string
 		args    []interface{}
+		orderBy string
 	)
 
 	if filter == nil {
@@ -88,6 +89,14 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	if len(clauses) != 0 {
 		query += " WHERE " + strings.Join(clauses, " AND ")
 	}
+
+	// Check if OrderBy is provided
+	if filter.OrderBy != nil {
+		orderBy = *filter.OrderBy
+	}
+	// If provided, append the ORDER BY clause to the query based on the provided OrderBy value.
+	// If OrderBy is not provided, the races are ordered by default based on the advertised start time.
+	query += "ORDER BY advertised_start_time " + orderBy
 
 	return query, args
 }

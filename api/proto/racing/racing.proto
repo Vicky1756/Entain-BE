@@ -30,6 +30,7 @@ message ListRacesRequestFilter {
   repeated int64 meeting_ids = 1;
   // If true, fetch only visible races; otherwise, fetch all races.
   optional bool visible = 2; 
+  optional string orderBy = 3;
 }
 
 /* Resources */
