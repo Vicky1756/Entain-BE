@@ -66,6 +66,7 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	var (
 		clauses []string
 		args    []interface{}
+		orderBy string
 	)
 
 	if filter == nil {
@@ -79,10 +80,23 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 			args = append(args, meetingID)
 		}
 	}
+	// If visible filter is true, add clause for visible races
+	if filter.Visible != nil {
+		clauses = append(clauses, "visible=?")
+		args = append(args, filter.Visible)
+	}
 
 	if len(clauses) != 0 {
 		query += " WHERE " + strings.Join(clauses, " AND ")
 	}
+
+	// Check if OrderBy is provided
+	if filter.OrderBy != nil {
+		orderBy = *filter.OrderBy
+	}
+	// If provided, append the ORDER BY clause to the query based on the provided OrderBy value.
+	// If OrderBy is not provided, the races are ordered by default based on the advertised start time.
+	query += "ORDER BY advertised_start_time " + orderBy
 
 	return query, args
 }
@@ -95,8 +109,8 @@ func (m *racesRepo) scanRaces(
 	for rows.Next() {
 		var race racing.Race
 		var advertisedStart time.Time
-
-		if err := rows.Scan(&race.Id, &race.MeetingId, &race.Name, &race.Number, &race.Visible, &advertisedStart); err != nil {
+		// Scan the values from the database into the Race struct.
+		if err := rows.Scan(&race.Id, &race.MeetingId, &race.Name, &race.Number, &race.Visible, &advertisedStart, &race.Status); err != nil {
 			if err == sql.ErrNoRows {
 				return nil, nil
 			}
