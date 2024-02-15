@@ -19,6 +19,8 @@ type RacesRepo interface {
 
 	// List will return a list of races.
 	List(filter *racing.ListRacesRequestFilter) ([]*racing.Race, error)
+	// GetRace returns details of a specific race by its ID.
+	GetRace(filter *racing.GetRaceRequest) (*racing.Race, error)
 }
 
 type racesRepo struct {
@@ -61,11 +63,42 @@ func (r *racesRepo) List(filter *racing.ListRacesRequestFilter) ([]*racing.Race,
 
 	return r.scanRaces(rows)
 }
+func (r *racesRepo) GetRace(filter *racing.GetRaceRequest) (*racing.Race, error) {
+	var (
+		err   error
+		query string
+		id    int64
+	)
+
+	id = filter.Id
+	// Retrieve query for getting race by ID
+	query = getRaceQueries()[raceGet]
+	rows, err := r.db.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// Scan races from rows
+	races, err := r.scanRaces(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if any races were found
+	if len(races) == 0 {
+		return nil, sql.ErrNoRows
+	}
+
+	// Return the first race found
+	return races[0], nil
+}
 
 func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFilter) (string, []interface{}) {
 	var (
 		clauses []string
 		args    []interface{}
+		orderBy string
 	)
 
 	if filter == nil {
@@ -79,10 +112,23 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 			args = append(args, meetingID)
 		}
 	}
+	// If visible filter is true, add clause for visible races
+	if filter.Visible != nil {
+		clauses = append(clauses, "visible=?")
+		args = append(args, filter.Visible)
+	}
 
 	if len(clauses) != 0 {
 		query += " WHERE " + strings.Join(clauses, " AND ")
 	}
+
+	// Check if OrderBy is provided
+	if filter.OrderBy != nil {
+		orderBy = *filter.OrderBy
+	}
+	// If provided, append the ORDER BY clause to the query based on the provided OrderBy value.
+	// If OrderBy is not provided, the races are ordered by default based on the advertised start time.
+	query += "ORDER BY advertised_start_time " + orderBy
 
 	return query, args
 }
@@ -97,11 +143,14 @@ func (m *racesRepo) scanRaces(
 		var advertisedStart time.Time
 
 		if err := rows.Scan(&race.Id, &race.MeetingId, &race.Name, &race.Number, &race.Visible, &advertisedStart); err != nil {
-			if err == sql.ErrNoRows {
-				return nil, nil
-			}
-
 			return nil, err
+		}
+		// An improvement over Q3:
+		// To avoid complex calculations in the SQL query
+		if advertisedStart.Before(time.Now()) {
+			race.Status = "CLOSED"
+		} else {
+			race.Status = "OPEN"
 		}
 
 		ts, err := ptypes.TimestampProto(advertisedStart)
