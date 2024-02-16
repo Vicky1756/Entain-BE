@@ -8,6 +8,7 @@ Please treat the services provided as if they would live in a real-world environ
 
 - `api`: A basic REST gateway, forwarding requests onto service(s).
 - `racing`: A very bare-bones racing service.
+- `sports`: A service for sporting events..
 
 ```
 entain/
@@ -19,6 +20,11 @@ entain/
 │  ├─ proto/
 │  ├─ service/
 │  ├─ main.go
+├─ sports/
+│  ├─ db/
+│  ├─ proto/
+│  ├─ service/
+│  ├─ main.go/
 ├─ README.md
 ```
 
@@ -66,6 +72,30 @@ curl -X "POST" "http://localhost:8000/v1/list-races" \
      -d $'{
   "filter": {}
 }'
+```
+
+### Additional
+
+1. start sports service
+
+```bash
+cd ./sports
+
+go build && ./sports
+➜ INFO[0000] gRPC server listening on: localhost:10000
+```
+
+2. Make a request for sports services
+
+```bash
+curl -X "POST" "http://localhost:8000/v1/list-events" \
+     -H 'Content-Type: application/json' \
+     -d $'{
+   "filter": {
+    "visible": true,
+    "orderBy": "ASC"
+   }
+   }'
 ```
 
 ### Changes/Updates Required
